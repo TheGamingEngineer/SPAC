@@ -20,7 +20,7 @@ class neural_network(nn.Module):
         
     
     def forward(self,x):
-        x = self.flatten()
+        x = self.flatten(x)
         output = self.network_stack(x)
         return output
     
