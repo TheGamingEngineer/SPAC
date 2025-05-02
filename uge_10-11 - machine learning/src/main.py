@@ -17,7 +17,9 @@ from network import neural_network
 import pandas as pd
 import numpy as np
 
-save_model=True
+save_excel= False
+
+save_model=False
 
 load_dotenv()
 
@@ -141,16 +143,14 @@ run_data={
     }
 df = pd.DataFrame(run_data)
 
-df.to_excel("MNIST_models.xlsx",index=False)
+if save_excel:
+    df.to_excel("MNIST_models.xlsx",index=False)
 
 model_file = "model.pt"
 
 if not save_model:
     model = neural_network()
-    if os.path.exists(model_file):
-        model.load_state_dict(torch.load(model_file, weights_only=True))
-        model.eval()
-    torch.save(model.state_dict,model_file)
+    torch.save(model.state_dict(),model_file)
 else:
     if os.path.exists(model_file):
         model = torch.load(model_file,weights_only=False)
