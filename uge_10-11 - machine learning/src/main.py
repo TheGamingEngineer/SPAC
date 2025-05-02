@@ -14,7 +14,7 @@ from torch.optim import SGD
 import torch.nn as nn
 import torch 
 from network import neural_network
-import matplotlib.pyplot as plt
+import pandas as pd
 import numpy as np
 
 save_model=True
@@ -93,6 +93,7 @@ def training_loop(dataloader, model, loss_fn, optimizer, batch_size=Batch_size):
             
     average_loss=sum(losses)/len(losses)
     
+    return average_loss
 
 
 def testing_loop(dataloader, model, loss_fn):
@@ -113,30 +114,35 @@ def testing_loop(dataloader, model, loss_fn):
     correct /=size
     
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}\n")
-    return correct*100
+    return correct*100, test_loss
     
 
 epoch_labels = [x+1 for x in range(Epochs)]
-training_loss = []
-testing_loss = []
+training_losses = []
+testing_losses = []
 accuracies = []
 
 for t in range(Epochs):
     titel=f"### Epoch {t+1} ###"
     print(f"{'#'*len(titel)}\n{titel}\n{'#'*len(titel)}")
     
-    training_loop(train_dataset, model, loss_fn, optimizer)
-    correct = testing_loop(test_dataset, model, loss_fn)
-    accuracies += [correct]
+    training_loss = training_loop(train_dataset, model, loss_fn, optimizer)
+    correct, test_loss = testing_loop(test_dataset, model, loss_fn)
+    
+    training_losses += [float(training_loss)]
+    testing_losses += [float(test_loss)]
+    accuracies += [float(correct)]
 
+run_data={
+    "Epoch":epoch_labels,
+    "training losses":training_losses,
+    "test losses":testing_losses,
+    "accuracy":accuracies
+    }
+df = pd.DataFrame(run_data)
 
-plt.plot(list(range(Epochs+1))[1:],accuracies)
-plt.xlabel('Epochs')
-plt.ylabel('Accuracies')
-plt.title(f'Accuracy progression given {Epochs} epochs, learning rate={Learning_rate} and batch size of {Batch_size}')    
-plt.tight_layout()
-plt.show()
-"""
+df.to_excel("MNIST_models.xlsx",index=False)
+
 model_file = "model.pt"
 
 if not save_model:
@@ -151,5 +157,5 @@ else:
     else:
         model = neural_network()
     torch.save(model,model_file)    
-"""   
-    
+
+

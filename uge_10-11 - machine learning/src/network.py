@@ -13,9 +13,16 @@ class neural_network(nn.Module):
         super().__init__()
         self.flatten = nn.Flatten()
         self.network_stack = nn.Sequential(
-            nn.Linear(in_features = 28*28, out_features = 512),
-        nn.ReLU(),
-        nn.Linear(in_features = 512, out_features = 10)
+        nn.Linear(in_features = 28*28, out_features = 612),
+        nn.BatchNorm1d(612), # nromaliser aktivering
+        nn.ReLU(), # tilføjer non-linearitet
+        nn.Linear(in_features = 612, out_features = 410),
+        nn.BatchNorm1d(410), # nromaliser aktivering
+        nn.ReLU(), # tilføjer non-linearitet
+        nn.Linear(in_features = 410, out_features = 210),
+        nn.BatchNorm1d(210), # nromaliser aktivering
+        nn.ReLU(), # tilføjer non-linearitet
+        nn.Linear(in_features = 210, out_features = 10)
         )
         
     
