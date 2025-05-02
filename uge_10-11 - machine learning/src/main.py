@@ -68,6 +68,8 @@ print(f"using device: {device}")
 model = neural_network().to(device)
 
 optimizer = SGD(params = model.parameters(), lr = Learning_rate)
+#optimizer = torch.optim.Adam(params = model.parameters(), lr = Learning_rate)
+
 
 loss_fn = nn.CrossEntropyLoss()
 
@@ -149,7 +151,6 @@ if save_excel:
 model_file = "model.pt"
 
 if not save_model:
-    model = neural_network()
     torch.save(model.state_dict(),model_file)
 else:
     if os.path.exists(model_file):

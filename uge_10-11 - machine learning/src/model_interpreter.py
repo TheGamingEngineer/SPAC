@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 import struct
 import os
 from network import neural_network
-
+import seaborn
+import pandas as pd
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -39,7 +40,20 @@ model_instance = neural_network()
 model_instance.load_state_dict(torch.load("model.pt"))
 model_instance.eval()    
 
-for i in range(100):
+data={"0":[0 for x in range(10)],
+      "1":[0 for x in range(10)],
+      "2":[0 for x in range(10)],
+      "3":[0 for x in range(10)],
+      "4":[0 for x in range(10)],
+      "5":[0 for x in range(10)],
+      "6":[0 for x in range(10)],
+      "7":[0 for x in range(10)],
+      "8":[0 for x in range(10)],
+      "9":[0 for x in range(10)]}
+
+df_label=[str(i) for i in range(10)]
+
+for i in range(10000):
     # Vælg fx billede nummer 0
     billede = images[i]
     label = labels[i]
@@ -63,8 +77,25 @@ for i in range(100):
         output = model_instance(x)
         pred = model_instance(x).argmax(1).item()
     
-    print(f"Billede {i}: Sand label = {label}, Forudsigelse = {pred}")
-    plt.imshow(img_array, cmap="gray")
-    plt.title(f"Rigtig: {label}, Model: {pred}")
-    plt.show()
+    #print(f"Billede {i}: Sand label = {label}, Forudsigelse = {pred}")
+    #plt.imshow(img_array, cmap="gray")
+    #plt.title(f"Rigtig: {label}, Model: {pred}")
+    #plt.show()
+    data[str(label)][pred]+=1
     os.remove(f"fashionmnist_{i}.png")
+
+df = pd.DataFrame(data)
+
+plt.figure(figsize=(8,6))
+seaborn.heatmap(df,cmap = "RdYlGn", annot = True, xticklabels = df_label, yticklabels = df_label)
+
+# Tilføj labeller på længde- og breddeaksen
+plt.xlabel("Modelens forudsigelse")
+plt.ylabel("Rigtig label")
+
+# Valgfrit: titel
+plt.title("Konfusionsmatrix: aktuel vs. model")
+
+plt.show()
+
+
