@@ -1,10 +1,15 @@
 from Bio import Entrez, SeqIO
 import time
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import random
+from urllib.error import HTTPError
 
-Entrez.mail="alexander.andersen@specialisterne.com"
+Entrez.email="akba@jacs.com"
+Entrez.tool = "promoter_fetcher_script"
 
-rige="prokaryot"
-promoter_or_genome="promoter"
+rige="eukaryot"
+
 
 if rige=="prokaryot":
     organismer = ["Escherichia coli", 
@@ -47,10 +52,10 @@ if rige=="prokaryot":
                   "streptococcus pyogenes"]
     
 elif rige=="eukaryot":
-    organismer=["homo sapiens",
-                "vulpus vulpus",
+    organismer=["Homo sapiens",
+                "Vulpus vulpus",
                 "Canis lupus familiaris",
-                "mus musculus",
+                "Mus musculus",
                 "Rattus norvegicus",
                 "Ursus arctos"]
 
@@ -77,59 +82,112 @@ elif rige=="virus":
                 "papilloma",
                 "variola"]
 
+def robust_esearch(term, db="nucleotide", retries=3, delay=3):
+    """Robust wrapper til Entrez.esearch med retry-logik."""
+    for attempt in range(retries):
+        try:
+            handle = Entrez.esearch(db=db, term=term, usehistory="y")
+            results = Entrez.read(handle)
+            handle.close()
+            return results
+        except RuntimeError as e:
+            print(f"RuntimeError (forsøg {attempt+1}/{retries}): {e}")
+        except HTTPError as e:
+            print(f"HTTPError (forsøg {attempt+1}/{retries}): {e}")
+        time.sleep(delay + attempt * 2)  # Øget forsinkelse per forsøg
+    print("‼️ Giver op på søgning:", term)
+    return None
 
-output_file=f"{promoter_or_genome}s_{rige}.csv"
 
-if promoter_or_genome=="genome":
-    promoter_or_genome="complete genome"
+
+output_file=f"promoters_{rige}.csv"
 
 
 antal_sekvenser=20
 
-
 batch_size=100
 
-with open(output_file, "w", newline="") as file:
-    file.write("organism,sequence,Description\n")
+data=pd.DataFrame({"organism":[],"sequence":[],"Description":[],"promoter":[]})
 
 endelige_organismer=[]
 for organisme in organismer:
-    print(f"samler for {organisme}")
-    søgeord=f"{promoter_or_genome}[Title] AND {organisme}[Organism]"
-    søgning = Entrez.esearch(db="nucleotide", term=søgeord, usehistory="y")
-    resultater = Entrez.read(søgning)
-    søgning.close()
+    time.sleep(1.0  + random.uniform(0, 1.0))
+    print(f"samler promotere for {organisme}")
+    søgeord=f"promoter[Title] AND {organisme}[Organism]"
+    resultater = robust_esearch(søgeord)
     
     count = int(resultater["Count"])
     webenv = resultater["WebEnv"]
     query_key = resultater["QueryKey"]
         
+    for start in range(0,count,batch_size):
+        end=min(count, start+batch_size)
+        
+        handle= Entrez.efetch(
+            db="nucleotide",
+            rettype="fasta",
+            retmode="text",
+            retstart=start,
+            retmax=batch_size,
+            webenv=webenv,
+            query_key=query_key
+            )
+        
+        records = SeqIO.parse(handle,"fasta")
+            
+        for record in records:
+            sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
+            data.loc[len(data)]=[sande_navn, str(record.seq), record.description.replace(",","|"), 1]
+            if organisme not in endelige_organismer:
+                endelige_organismer.append(organisme)
+        handle.close()
+        time.sleep(1.0  + random.uniform(0, 1.0))
     
-    with open(output_file, "a+") as file:
-        for start in range(0,count,batch_size):
-            end=min(count, start+batch_size)
-            
-            handle= Entrez.efetch(
-                db="nucleotide",
-                rettype="fasta",
-                retmode="text",
-                retstart=start,
-                retmax=batch_size,
-                webenv=webenv,
-                query_key=query_key
-                )
-            
-            records = SeqIO.parse(handle,"fasta")
+    print(f"samler ikke-promotere for {organisme}")
+    søgeord=f"CDS[Feature Key] AND {organisme}[organisme] Not promoter[Title]"
+    resultater = robust_esearch(søgeord)
+    
+    cds_count = int(resultater["Count"])
+    cds_webenv = resultater["WebEnv"]
+    cds_query_key = resultater["QueryKey"]
+    
+    for start in range(0,cds_count,batch_size):
+        end=min(count, start+batch_size)
+        
+        handle= Entrez.efetch(
+            db="nucleotide",
+            rettype="fasta",
+            retmode="text",
+            retstart=start,
+            retmax=batch_size,
+            webenv=cds_webenv,
+            query_key=cds_query_key
+            )
+        
+        records = SeqIO.parse(handle, "fasta")
+        
+        for record in records:
+            if len(str(record.seq)) > 200:
+                subseq = str(record.seq)[:200]
+                description = record.description.replace(",","|")
+                sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
+                data.loc[len(data)]=[sande_navn, subseq, description, 0]
+        handle.close()
+        time.sleep(1.0  + random.uniform(0, 1.0))
                 
-            for record in records:
-                description=record.description.replace(",","|")
-                samlet = f"{organisme},{str(record.seq)},{description}"
-                line = f'"{samlet}"\n'
-                file.write(line)
-                if organisme not in endelige_organismer:
-                    endelige_organismer.append(organisme)
-            handle.close()
-            
-            time.sleep(0.4)
+
+
+counts = data["organism"].value_counts()
+data = data[data["organism"].isin(counts[counts >= 10].index)]
+
+train, temp = train_test_split(data, test_size=0.3, stratify=data["organism"], random_state=38)
+
+test, validation = train_test_split(temp, test_size= 0.5, stratify=temp["organism"], random_state=38)       
+
+
+train.to_csv(f"training_{rige}.csv",index=False)
+test.to_csv(f"test_{rige}.csv",index=False)
+validation.to_csv(f"validation_{rige}.csv",index=False)
+
 
 print(f"færdig! inkludere {len(endelige_organismer)}/{len(organismer)} af de ønskede organismer")

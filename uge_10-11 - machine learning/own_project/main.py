@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import torch 
 import pandas as pd
 import numpy as np
-
+from neural_network import neural_network
 
 Epochs = 50
 Learning_rate = 1e-3
@@ -24,6 +24,11 @@ Batch_size = 128
 
 device = current_accelerator().type if is_available() else "cpu"
 print(f"using device: {device}")
+model = neural_network().to(device)
+
+
+promoter_Data=pd.read_csv("promoters_eukaryot_2.csv",sep=";")    
+
 
 
 
