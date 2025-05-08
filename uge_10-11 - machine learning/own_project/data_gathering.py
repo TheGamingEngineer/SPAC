@@ -5,8 +5,10 @@ from sklearn.model_selection import train_test_split
 import random
 from urllib.error import HTTPError
 
-Entrez.email="akba@jacs.com"
+Entrez.email="onewingedweeman@gmail.com"
 Entrez.tool = "promoter_fetcher_script"
+Entrez.api_key = "700c18ded41ed0b7f3bac0cd53c69fa12609"
+
 
 rige="eukaryot"
 
@@ -103,8 +105,6 @@ def robust_esearch(term, db="nucleotide", retries=3, delay=3):
 output_file=f"promoters_{rige}.csv"
 
 
-antal_sekvenser=20
-
 batch_size=100
 
 data=pd.DataFrame({"organism":[],"sequence":[],"Description":[],"promoter":[]})
@@ -144,7 +144,7 @@ for organisme in organismer:
         time.sleep(1.0  + random.uniform(0, 1.0))
     
     print(f"samler ikke-promotere for {organisme}")
-    søgeord=f"CDS[Feature Key] AND {organisme}[organisme] Not promoter[Title]"
+    søgeord = f"{organisme}[Organism] AND NOT promoter[All Fields]"
     resultater = robust_esearch(søgeord)
     
     cds_count = int(resultater["Count"])
@@ -178,7 +178,7 @@ for organisme in organismer:
 
 
 counts = data["organism"].value_counts()
-data = data[data["organism"].isin(counts[counts >= 10].index)]
+#data = data[data["organism"].isin(counts[counts >= 10].index)]
 
 train, temp = train_test_split(data, test_size=0.3, stratify=data["organism"], random_state=38)
 
