@@ -144,7 +144,8 @@ for organisme in organismer:
         time.sleep(1.0  + random.uniform(0, 1.0))
     
     print(f"samler ikke-promotere for {organisme}")
-    søgeord = f"{organisme}[Organism] AND NOT promoter[All Fields]"
+    #søgeord = f"CDS[Feature Key] AND {organisme}[Organism] AND NOT promoter[All Fields]"
+    søgeord=f"{organisme}[Organism] AND 200:1000[Sequence Length] NOT promoter[Title]"
     resultater = robust_esearch(søgeord)
     
     cds_count = int(resultater["Count"])
