@@ -13,7 +13,8 @@ rige="prokaryot"
 #rige="fungi"
 #rige="archaea"
 #rige="virus"
-limit=100
+limit=500
+
 ############## Indstillinger **DO NOT TOUCH** ##############
 Entrez.email="onewingedweeman@gmail.com"
 Entrez.tool = "promoter_fetcher_script"
@@ -44,7 +45,7 @@ if rige=="prokaryot":
                   #"treponema pallidum",
                   "mycobacterium leprae",
                   "corynebacterium diphtheriae",
-                  "campylobacter coli",
+                  #"campylobacter coli",
                   "pseudomonas aeruginosa",
                   "vibrio vulnificus",
                   "vibrio parahaemolycus",
@@ -57,7 +58,7 @@ if rige=="prokaryot":
                   "clostridium perfringens",
                   "bacillus cereus",
                   "listeria monocytogenes",
-                  "streptococcus agalactiae",
+                  #"streptococcus agalactiae",
                   "streptococcus pyogenes"]
     
 elif rige=="eukaryot":
@@ -173,8 +174,8 @@ for organisme in organismer:
             retmode="text",
             retstart=start,
             retmax=batch_size,
-            webenv=webenv,
-            query_key=query_key
+            webenv=cds_webenv,
+            query_key=cds_query_key
             )
         
         records = SeqIO.parse(handle,"fasta")
@@ -194,7 +195,7 @@ for organisme in organismer:
 
 
 counts = data["organism"].value_counts()
-#data = data[data["organism"].isin(counts[counts >= 10].index)]
+data = data[data["organism"].isin(counts[counts >= 10].index)]
 
 train, temp = train_test_split(data, test_size=0.3, stratify=data["organism"], random_state=38)
 
