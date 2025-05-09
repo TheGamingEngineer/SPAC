@@ -5,12 +5,19 @@ from sklearn.model_selection import train_test_split
 import random
 from urllib.error import HTTPError
 
+############## Valgfrie indstillinger ##############
+curated=None
+#curated=" AND srcdb_refseq[PROP]"
+rige="prokaryot"
+#rige="eukaryot"
+#rige="fungi"
+#rige="archaea"
+#rige="virus"
+limit=100
+############## Indstillinger **DO NOT TOUCH** ##############
 Entrez.email="onewingedweeman@gmail.com"
 Entrez.tool = "promoter_fetcher_script"
 Entrez.api_key = "700c18ded41ed0b7f3bac0cd53c69fa12609"
-
-
-rige="eukaryot"
 
 
 if rige=="prokaryot":
@@ -34,7 +41,7 @@ if rige=="prokaryot":
                   "leptospira interrogens",
                   "borrelia burgdorferi",
                   "borrelia recurrentis",
-                  "treponema pallidum",
+                  #"treponema pallidum",
                   "mycobacterium leprae",
                   "corynebacterium diphtheriae",
                   "campylobacter coli",
@@ -105,7 +112,7 @@ def robust_esearch(term, db="nucleotide", retries=3, delay=3):
 output_file=f"promoters_{rige}.csv"
 
 
-batch_size=100
+batch_size=500
 
 data=pd.DataFrame({"organism":[],"sequence":[],"Description":[],"promoter":[]})
 
@@ -114,9 +121,11 @@ for organisme in organismer:
     time.sleep(1.0  + random.uniform(0, 1.0))
     print(f"samler promotere for {organisme}")
     søgeord=f"promoter[Title] AND {organisme}[Organism]"
+    if curated:
+        søgeord+=curated
     resultater = robust_esearch(søgeord)
     
-    count = int(resultater["Count"])
+    count = min(limit,int(resultater["Count"]))
     webenv = resultater["WebEnv"]
     query_key = resultater["QueryKey"]
         
@@ -134,26 +143,29 @@ for organisme in organismer:
             )
         
         records = SeqIO.parse(handle,"fasta")
-            
+
         for record in records:
             sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
             data.loc[len(data)]=[sande_navn, str(record.seq), record.description.replace(",","|"), 1]
             if organisme not in endelige_organismer:
                 endelige_organismer.append(organisme)
+
         handle.close()
         time.sleep(1.0  + random.uniform(0, 1.0))
     
     print(f"samler ikke-promotere for {organisme}")
     #søgeord = f"CDS[Feature Key] AND {organisme}[Organism] AND NOT promoter[All Fields]"
-    søgeord=f"{organisme}[Organism] AND 200:1000[Sequence Length] NOT promoter[Title]"
+    søgeord=f"CDS[Feature Key] AND {organisme}[Organism] AND NOT promoter[All Fields]"
+    if curated:
+        søgeord+=curated
     resultater = robust_esearch(søgeord)
     
-    cds_count = int(resultater["Count"])
+    cds_count = min(limit,int(resultater["Count"]))
     cds_webenv = resultater["WebEnv"]
     cds_query_key = resultater["QueryKey"]
     
     for start in range(0,cds_count,batch_size):
-        end=min(count, start+batch_size)
+        end=min(cds_count, start+batch_size)
         
         handle= Entrez.efetch(
             db="nucleotide",
@@ -161,20 +173,23 @@ for organisme in organismer:
             retmode="text",
             retstart=start,
             retmax=batch_size,
-            webenv=cds_webenv,
-            query_key=cds_query_key
+            webenv=webenv,
+            query_key=query_key
             )
         
-        records = SeqIO.parse(handle, "fasta")
-        
+        records = SeqIO.parse(handle,"fasta")
+
         for record in records:
-            if len(str(record.seq)) > 200:
-                subseq = str(record.seq)[:200]
-                description = record.description.replace(",","|")
-                sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
-                data.loc[len(data)]=[sande_navn, subseq, description, 0]
+            sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
+            data.loc[len(data)]=[sande_navn, str(record.seq), record.description.replace(",","|"), 0]
+            if organisme not in endelige_organismer:
+                endelige_organismer.append(organisme)
+
         handle.close()
         time.sleep(1.0  + random.uniform(0, 1.0))
+
+        handle.close()
+        time.sleep(random.uniform(0, 1.0))
                 
 
 

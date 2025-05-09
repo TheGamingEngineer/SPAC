@@ -34,7 +34,35 @@ https://pytorch.org/docs/stable/generated/torch.nn.Module.html
 https://www.geeksforgeeks.org/how-to-create-and-use-env-files-in-python/
 https://lark-parser.readthedocs.io/en/latest/
 https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-
+https://bioconductor.org/packages/release/bioc/html/seqLogo.html
+https://github.com/szagoruyko/pytorchviz
+https://github.com/ashishpatel26/Tools-to-Design-or-Visualize-Architecture-of-Neural-Network
+https://www.analyticsvidhya.com/blog/2021/05/introduction-to-supervised-deep-learning-algorithms/
+https://en.wikipedia.org/wiki/Promoter_(genetics)
+https://www.ncbi.nlm.nih.gov/gene/?term=vulpes%20vulpes%5BOrganism%5D%20AND%20NOT%20promoter%5BTitle%5D
+https://www.geeksforgeeks.org/remove-item-from-list-in-python/
+https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html
+https://www.geeksforgeeks.org/different-ways-to-iterate-over-rows-in-pandas-dataframe/
+https://www.geeksforgeeks.org/how-to-add-one-row-in-an-existing-pandas-dataframe/
+https://www.geeksforgeeks.org/training-vs-testing-vs-validation-sets/
+https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
+https://biopython.org/docs/latest/Tutorial/chapter_introduction.html
+https://en.wikipedia.org/wiki/Convolutional_neural_network#
+https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+https://www.geeksforgeeks.org/python-import-module-from-different-directory/
+https://fileinfo.com/extension/pt
+https://simplecode.dk/hvad-er-machine-learning/#:~:text=Denne%20artikel%20vil%20introducere%20dig%20til%20de%20essentielle,Machine%20learning%2C%20som%20vil%20gennemg%C3%A5s%20i%20dette%20afsnit.
+https://stackoverflow.com/questions/58926054/how-to-get-the-device-type-of-a-pytorch-module-conveniently
+https://pytorch.org/docs/stable/generated/torch.nn.Module.html
+https://docs.pytorch.org/vision/stable/generated/torchvision.datasets.FashionMNIST.html#torchvision.datasets.FashionMNIST
+https://en.wikipedia.org/wiki/Tensor
+https://docs.pytorch.org/docs/stable/generated/torch.nn.ReLU.html
+https://pytorch.org/docs/stable/nn.functional.html
+https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html
+https://en.wikipedia.org/wiki/Cross-entropy#Cross-entropy_loss_function_and_logistic_regression
+https://en.wikipedia.org/wiki/Stochastic_gradient_descent
+https://en.wikipedia.org/wiki/Q-learning#cite_note-14
+https://www.geeksforgeeks.org/actor-critic-algorithm-in-reinforcement-learning/
 
 
 

@@ -7,7 +7,7 @@ Created on Wed May  7 10:59:03 2025
 import torch.nn as nn
 import torch.nn.functional as F
 
-class neural_network(nn.Module):
+class MLP(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.flatten = nn.Flatten()
@@ -29,3 +29,18 @@ class neural_network(nn.Module):
         x = self.flatten(x)
         output = self.network_stack(x)
         return output
+
+class CNN(nn.Module):
+    def __init__(self) -> None:
+        return self
+
+    def forward(self,x):
+        return x
+
+class RNN(nn.Module):
+    def __init__(self) -> None:
+        
+        return self
+
+    def forward(self,x):
+        return x

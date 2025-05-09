@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import torch 
 import pandas as pd
 import numpy as np
-from neural_network import neural_network
+from neural_network import *
 
 Epochs = 50
 Learning_rate = 1e-3
