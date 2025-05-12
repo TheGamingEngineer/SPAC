@@ -35,7 +35,7 @@ class RNN(nn.Module):
         super(RNN,self).__init__()
         self.hidden_size = hidden_size
         
-        self.rnn = nn.GRU(input_size, hidden_size, num_layers=2, batch_first=True)
+        self.rnn = nn.GRU(input_size, hidden_size, num_layers=1, batch_first=True)
         self.promoter_out = nn.Linear(hidden_size,1)
         self.org_out = nn.Linear(hidden_size, 5)
         
@@ -43,7 +43,7 @@ class RNN(nn.Module):
                 
     def forward(self,x):
         _, hidden = self.rnn(x)
-        hidden = hidden.squeeze[-1]
+        hidden = hidden[-1]
         return self.promoter_out(hidden), self.org_out(hidden)
 
 
@@ -208,12 +208,12 @@ def testing_loop(dataloader, model, pro_fn=promoter_loss_func, org_fn=organism_l
     org_loss /= num_batches
     total_loss /= num_batches
     
-    correct_total = (correct_pro + correct_org) / (size)
+    correct_total = (correct_pro + correct_org) / (2*size)
     correct_pro /=size
     correct_org /=size
     
     print(f"Average Test Losses: Promoters={promoter_loss:>7f}; Organisms={org_loss:>7f}; Total={total_loss:>7f}")
-    print(f"Accuracies: Promoters={100*correct_pro:>7f}; Organisms={100*correct_org:>7f}; Total={100*correct_total:>7f}\n")
+    print(f"Average Accuracies: Promoters={100*correct_pro:>7f}; Organisms={100*correct_org:>7f}; Total={100*correct_total:>7f}\n")
     return correct_pro*100, promoter_loss, correct_org*100, org_loss, correct_total*100, total_loss
 
 

@@ -8,13 +8,13 @@ from urllib.error import HTTPError
 ############## Valgfrie indstillinger ##############
 curated=None
 #curated=" AND srcdb_refseq[PROP]"
-rige="prokaryot"
-#rige="eukaryot"
+#rige="prokaryot"
+rige="eukaryot"
 #rige="fungi"
 #rige="archaea"
 #rige="virus"
-limit=500
-pooled = True
+limit=5000
+pooled = False
 ############## Indstillinger **DO NOT TOUCH** ##############
 Entrez.email="onewingedweeman@gmail.com"
 Entrez.tool = "promoter_fetcher_script"
@@ -29,11 +29,9 @@ if rige=="prokaryot":
     
 elif rige=="eukaryot":
     organismer=["Homo sapiens",
-                "Vulpus vulpus",
                 "Canis lupus familiaris",
                 "Mus musculus",
-                "Rattus norvegicus",
-                "Ursus arctos"]
+                "Rattus norvegicus"]
 
 elif rige=="fungi":
     organismer=["penicillium",
