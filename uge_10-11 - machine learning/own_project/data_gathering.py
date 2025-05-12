@@ -14,7 +14,7 @@ rige="prokaryot"
 #rige="archaea"
 #rige="virus"
 limit=500
-
+pooled = True
 ############## Indstillinger **DO NOT TOUCH** ##############
 Entrez.email="onewingedweeman@gmail.com"
 Entrez.tool = "promoter_fetcher_script"
@@ -22,44 +22,12 @@ Entrez.api_key = "700c18ded41ed0b7f3bac0cd53c69fa12609"
 
 
 if rige=="prokaryot":
-    organismer = ["Escherichia coli", 
-                  "salmonella enterica subsp. enterica",
-                  "mycobacterium tuberculosis",
-                  "streptococcus pneumoniae",
-                  "pseudomonas putida",
-                  "staphylococcus aureus",
-                  "neisseria meningitidis",
-                  "salmonella enterica",
+    organismer = ["Escherichia coli",
                   "bacillus subtilis",
                   "Helicobacter pylori",
-                  "Klebsiella aerogenes",
-                  "Haemophilus influenzae",
-                  "Streptococcus gordonii",
-                  "Neisseria gonorrhoeae",
                   "corynebacterium ulcerans",
-                  "trypanosoma cruzi",
-                  "trypanosoma brucei",
                   "leptospira interrogens",
-                  "borrelia burgdorferi",
-                  "borrelia recurrentis",
-                  #"treponema pallidum",
-                  "mycobacterium leprae",
-                  "corynebacterium diphtheriae",
-                  #"campylobacter coli",
-                  "pseudomonas aeruginosa",
-                  "vibrio vulnificus",
-                  "vibrio parahaemolycus",
-                  "yersinia enterocolitica",
-                  "klebsiella pneumoniae",
-                  "shigella",
-                  "clostridium difficile",
-                  "clostridium botulinum",
-                  "clostridium tetani",
-                  "clostridium perfringens",
-                  "bacillus cereus",
-                  "listeria monocytogenes",
-                  #"streptococcus agalactiae",
-                  "streptococcus pyogenes"]
+                  "pseudomonas aeruginosa"]
     
 elif rige=="eukaryot":
     organismer=["Homo sapiens",
@@ -118,7 +86,17 @@ batch_size=500
 data=pd.DataFrame({"organism":[],"sequence":[],"Description":[],"promoter":[]})
 
 endelige_organismer=[]
+max_promoter_længde={}
+max_non_længde={}
+min_promoter_længde={}
+min_non_længde={}
+
 for organisme in organismer:
+    max_promoter_længde[organisme]=0
+    max_non_længde[organisme]=0
+    min_promoter_længde[organisme]=10**6
+    min_non_længde[organisme]=10**6
+    
     time.sleep(1.0  + random.uniform(0, 1.0))
     print(f"samler promotere for {organisme}")
     søgeord=f"promoter[Title] AND {organisme}[Organism]"
@@ -146,8 +124,14 @@ for organisme in organismer:
         records = SeqIO.parse(handle,"fasta")
 
         for record in records:
-            sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
-            data.loc[len(data)]=[sande_navn, str(record.seq), record.description.replace(",","|"), 1]
+            #sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
+            data.loc[len(data)]=[organisme, str(record.seq), record.description.replace(",","|"), 1]
+            
+            if len(str(record.seq)) > max_promoter_længde[organisme]:
+                max_promoter_længde[organisme] = len(str(record.seq))
+            elif len(str(record.seq)) < min_promoter_længde[organisme]:
+                min_promoter_længde[organisme] = len(str(record.seq))
+            
             if organisme not in endelige_organismer:
                 endelige_organismer.append(organisme)
 
@@ -181,11 +165,20 @@ for organisme in organismer:
         records = SeqIO.parse(handle,"fasta")
 
         for record in records:
-            sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
-            data.loc[len(data)]=[sande_navn, str(record.seq), record.description.replace(",","|"), 0]
+            #sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
+            data.loc[len(data)]=[organisme, str(record.seq), record.description.replace(",","|"), 0]
+            
+            if len(str(record.seq)) > max_non_længde[organisme]:
+                max_non_længde[organisme] = len(str(record.seq))
+            elif len(str(record.seq)) < min_non_længde[organisme]:
+                min_non_længde[organisme] = len(str(record.seq))
+            
             if organisme not in endelige_organismer:
                 endelige_organismer.append(organisme)
-
+        if start == count:
+            break
+            
+            
         handle.close()
         time.sleep(1.0  + random.uniform(0, 1.0))
 
@@ -197,14 +190,71 @@ for organisme in organismer:
 counts = data["organism"].value_counts()
 data = data[data["organism"].isin(counts[counts >= 10].index)]
 
-train, temp = train_test_split(data, test_size=0.3, stratify=data["organism"], random_state=38)
 
-test, validation = train_test_split(temp, test_size= 0.5, stratify=temp["organism"], random_state=38)       
+if not pooled:
+    train, temp = train_test_split(data, test_size=0.3, stratify=data["organism"], random_state=38)
+    test, validation = train_test_split(temp, test_size= 0.5, stratify=temp["organism"], random_state=38)   
+    overview={}
+    for i in data["organism"].unique():
+        Tr = train[train["organism"]==i]
+        Te = test[test["organism"]==i]
+        V = validation[validation["organism"]==i]
+        
+        Tr_P = len(Tr[Tr["promoter"]==1])
+        Tr_N = len(Tr[Tr["promoter"]==0])
+        
+        Te_P = len(Te[Te["promoter"]==1])
+        Te_N = len(Te[Te["promoter"]==0])
+        
+        V_P = len(V[V["promoter"]==1])
+        V_N = len(V[V["promoter"]==0])
+        
+        overview[i]=[Tr_P + Te_P + V_P, 
+                     Tr_P,
+                     Te_P,
+                     V_P,
+                     Tr_N + Te_N + V_N, 
+                     Tr_N,
+                     Te_N,
+                     V_N,
+                     Tr_P + Te_P + V_P + Tr_N + Te_N + V_N]
+            
+        overview_data = pd.DataFrame(overview,index=["PROMOTERS",
+                                                     "training",
+                                                     "testing",
+                                                     "validation",
+                                                     "NON-PROMOTERS",
+                                                     "training",
+                                                     "testing",
+                                                     "validation",
+                                                     "TOTAL"])
 
 
-train.to_csv(f"training_{rige}.csv",index=False)
-test.to_csv(f"test_{rige}.csv",index=False)
-validation.to_csv(f"validation_{rige}.csv",index=False)
+    train.to_csv(f"training_{rige}.csv",index=False)
+    test.to_csv(f"test_{rige}.csv",index=False)
+    validation.to_csv(f"validation_{rige}.csv",index=False)
+    overview_data.to_csv(f"overview_{rige}_unpooled.csv",index=True)
+else:
+    overview={}
+    for i in data["organism"].unique():
+        org_data = data[data["organism"]==i]
+        
+        org_P = len(org_data[org_data["promoter"]==1])
+        org_N = len(org_data[org_data["promoter"]==0])
+        
+        overview[i]=[org_P + org_N, 
+                     org_P,
+                     org_N]
+        
+        overview_data = pd.DataFrame(overview,index=["TOTAL",
+                                                     "PROMOTERS",
+                                                     "NON-PROMOTERS"])
+        
+        
+        
+    data.to_csv(f"data_{rige}.csv",index=False)
+    overview_data.to_csv(f"overview_{rige}_pooled.csv",index=True)
+
 
 
 print(f"færdig! inkludere {len(endelige_organismer)}/{len(organismer)} af de ønskede organismer")
