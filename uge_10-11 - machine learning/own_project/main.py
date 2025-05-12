@@ -35,7 +35,7 @@ class RNN(nn.Module):
         super(RNN,self).__init__()
         self.hidden_size = hidden_size
         
-        self.rnn = nn.GRU(input_size, hidden_size, batch_first=True)
+        self.rnn = nn.GRU(input_size, hidden_size, num_layers=2, batch_first=True)
         self.promoter_out = nn.Linear(hidden_size,1)
         self.org_out = nn.Linear(hidden_size, 5)
         
@@ -43,7 +43,7 @@ class RNN(nn.Module):
                 
     def forward(self,x):
         _, hidden = self.rnn(x)
-        hidden = hidden.squeeze(0)
+        hidden = hidden.squeeze[-1]
         return self.promoter_out(hidden), self.org_out(hidden)
 
 

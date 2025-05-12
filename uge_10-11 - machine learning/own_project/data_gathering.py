@@ -25,8 +25,6 @@ if rige=="prokaryot":
     organismer = ["Escherichia coli",
                   "bacillus subtilis",
                   "Helicobacter pylori",
-                  "corynebacterium ulcerans",
-                  "leptospira interrogens",
                   "pseudomonas aeruginosa"]
     
 elif rige=="eukaryot":
@@ -145,7 +143,9 @@ for organisme in organismer:
         søgeord+=curated
     resultater = robust_esearch(søgeord)
     
-    cds_count = min(limit,int(resultater["Count"]))
+    new_count = int(resultater["Count"]) if int(resultater["Count"])<count else count
+    
+    cds_count = min(limit,new_count)
     cds_webenv = resultater["WebEnv"]
     cds_query_key = resultater["QueryKey"]
     
@@ -163,10 +163,11 @@ for organisme in organismer:
             )
         
         records = SeqIO.parse(handle,"fasta")
-
+        n=0
         for record in records:
             #sande_navn = record.description.split("[")[-1].replace("]","") if "[" in record.description else organisme
             data.loc[len(data)]=[organisme, str(record.seq), record.description.replace(",","|"), 0]
+            
             
             if len(str(record.seq)) > max_non_længde[organisme]:
                 max_non_længde[organisme] = len(str(record.seq))
@@ -175,9 +176,10 @@ for organisme in organismer:
             
             if organisme not in endelige_organismer:
                 endelige_organismer.append(organisme)
-        if start == count:
-            break
             
+            n+=1
+            if n==cds_count:
+                break
             
         handle.close()
         time.sleep(1.0  + random.uniform(0, 1.0))
