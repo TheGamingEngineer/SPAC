@@ -16,18 +16,37 @@ import torch.nn.functional as F
 import torch 
 import pandas as pd
 import numpy as np
+from datetime import date
+import json
 
 Epochs = 50
 Learning_rate = 1e-3
-Batch_size = 128 
+Batch_size = 128
 save_model=False
 
+"""
 test_Data=pd.read_csv("test_eukaryot_curated.csv",sep=";") 
 train_Data=pd.read_csv("training_eukaryot_curated.csv",sep=";")    
 val_Data=pd.read_csv("validation_eukaryot_curated.csv",sep=";") 
+"""
+
+def read_large_jsonl(path, max_lines=None):
+    data = []
+    with open(path, "r", encoding="utf-8") as f:
+        for i, line in enumerate(f):
+            if max_lines and i >= max_lines:
+                break
+            data.append(json.loads(line))
+    return pd.DataFrame(data)
+
+# Brug den til dine tre datasæt:
+train_Data = read_large_jsonl("training_eukaryot_2025-05-13.jsonl")
+test_Data  = read_large_jsonl("test_eukaryot_2025-05-13.jsonl")
+val_Data   = read_large_jsonl("validation_eukaryot_2025-05-13.jsonl")
+
 
 input_size = 4
-hidden_size = 32
+hidden_size = 64
 
 
 class RNN(nn.Module):
@@ -35,7 +54,7 @@ class RNN(nn.Module):
         super(RNN,self).__init__()
         self.hidden_size = hidden_size
         
-        self.rnn = nn.GRU(input_size, hidden_size, num_layers=1, batch_first=True)
+        self.rnn = nn.GRU(input_size, hidden_size, num_layers=2, batch_first=True)
         self.promoter_out = nn.Linear(hidden_size,1)
         self.org_out = nn.Linear(hidden_size, 5)
         
@@ -95,7 +114,8 @@ class Sequence_dataset(Dataset):
         one_hot_seq = seq_one_hot(seq)
         padded = torch.zeros(self.max_len,4)
         padded[:len(one_hot_seq)] = one_hot_seq
-        promoter_label = torch.tensor(self.promoter_labels.iloc[idx],dtype=torch.long)
+        #promoter_label = torch.tensor(self.promoter_labels.iloc[idx],dtype=torch.long)
+        promoter_label = torch.tensor(self.promoter_labels.iloc[idx],dtype=torch.float) ## 13/5-2025 kl 1401
         org_label = torch.tensor(self.organism_labels.iloc[idx],dtype=torch.long)
         
         return padded, promoter_label, org_label
@@ -138,15 +158,19 @@ def training_loop(dataloader, model, optimizer, batch_size=Batch_size, pro_fn=pr
         total_loss = promoter_loss + org_loss
         
         ## opdater model
-        total_loss.backward()
         optimizer.zero_grad()
+        total_loss.backward()
         optimizer.step()
         
         
         if n % 100 == 0: 
             ## udregner promoter-forudsigelses nøjagtigheden
             probs = torch.sigmoid(pred_promoter)
-            correct_pro = ((probs > 0.5) == y_promoter).sum().item()
+            #correct_pro = ((probs > 0.5) == y_promoter).sum().item()
+            ### 13/5-2025 kl 14:01
+            preds = (probs > 0.5).squeeze().long()
+            labels = y_promoter.squeeze().long()
+            correct_pro = (preds == labels).sum().item()
             promoter_acc = correct_pro / y_promoter.size(0)
             
             ## udregner organisme-forudsigelses nøjagtigheden
@@ -154,8 +178,8 @@ def training_loop(dataloader, model, optimizer, batch_size=Batch_size, pro_fn=pr
             correct_org = (pred_class == y_org).sum().item()
             org_acc = correct_org / y_org.size(0)
             
-            print(f"promoter-loss: {promoter_loss.item():>7f}; organism-loss: {org_loss.item():>7f}]")
-            print(f"promoter-accuracy: {promoter_acc:>7f}; organism-accuracy: {org_acc:>7f}]")
+            print(f"promoter-loss: {promoter_loss.item():>7f}; organism-loss: {org_loss.item():>7f}")
+            print(f"promoter-accuracy: {promoter_acc:>7f}; organism-accuracy: {org_acc:>7f}")
             
         promoter_losses.append(promoter_loss.item())
         organism_losses.append(org_loss.item())
@@ -187,6 +211,7 @@ def testing_loop(dataloader, model, pro_fn=promoter_loss_func, org_fn=organism_l
     # evaluering uden gradienter
     with torch.no_grad():
         for X, y_promoter, y_org in dataloader:
+            X = X.to(device).float()
             y_promoter = y_promoter.to(device).float().unsqueeze(1)
             y_org = y_org.to(device)
             
@@ -198,12 +223,17 @@ def testing_loop(dataloader, model, pro_fn=promoter_loss_func, org_fn=organism_l
             
             # Beregn korrekthed for promoter
             probs = torch.sigmoid(pro_pred)
-            correct_pro += ((probs > 0.5) == y_promoter).sum().item()
+            #correct_pro += ((probs > 0.5) == y_promoter).sum().item()
+            ### 13/5-2025 kl 14:01
+            preds = (probs > 0.5).squeeze().long()
+            labels = y_promoter.squeeze().long()
+            correct_pro += (preds == labels).sum().item()
             
             # Beregn korrekthed for organism
             correct_org += (org_pred.argmax(1) == y_org).sum().item()
-            
-    
+            #print("#######################################################")
+            #print("Mean promoter prediction probability:", probs.mean().item())
+            #print("#######################################################")
     promoter_loss /= num_batches
     org_loss /= num_batches
     total_loss /= num_batches
@@ -217,63 +247,64 @@ def testing_loop(dataloader, model, pro_fn=promoter_loss_func, org_fn=organism_l
     return correct_pro*100, promoter_loss, correct_org*100, org_loss, correct_total*100, total_loss
 
 
-
-epoch_labels = [x+1 for x in range(Epochs)]
-training_P_losses = []
-training_O_losses = []
-training_T_losses = []
-
-testing_P_losses = []
-testing_O_losses = []
-testing_T_losses = []
-
-accuracies_P = []
-accuracies_O = []
-accuracies_T = []
-
-for t in range(Epochs):
-    titel=f"### Epoch {t+1} ###"
-    print(f"{'#'*len(titel)}\n{titel}\n{'#'*len(titel)}")
+if __name__ == "__main__":
+    epoch_labels = [x+1 for x in range(Epochs)]
+    training_P_losses = []
+    training_O_losses = []
+    training_T_losses = []
     
-    training_P_loss, training_O_loss, training_T_loss = training_loop(train_loader, model, optimizer)
-    correct_pro, testing_P_loss, correct_org, testing_O_loss, correct_total, testing_T_loss = testing_loop(test_loader, model)
+    testing_P_losses = []
+    testing_O_losses = []
+    testing_T_losses = []
     
-    training_P_losses += [float(training_P_loss)]
-    training_O_losses += [float(training_O_loss)]
-    training_T_losses += [float(training_T_loss)]
+    accuracies_P = []
+    accuracies_O = []
+    accuracies_T = []
     
-    testing_P_losses += [float(testing_P_loss)]
-    testing_O_losses += [float(testing_O_loss)]
-    testing_T_losses += [float(testing_T_loss)]
+    for t in range(Epochs):
+        titel=f"### Epoch {t+1} ###"
+        print(f"{'#'*len(titel)}\n{titel}\n{'#'*len(titel)}")
+        
+        training_P_loss, training_O_loss, training_T_loss = training_loop(train_loader, model, optimizer)
+        correct_pro, testing_P_loss, correct_org, testing_O_loss, correct_total, testing_T_loss = testing_loop(test_loader, model)
+        
+        training_P_losses += [float(training_P_loss)]
+        training_O_losses += [float(training_O_loss)]
+        training_T_losses += [float(training_T_loss)]
+        
+        testing_P_losses += [float(testing_P_loss)]
+        testing_O_losses += [float(testing_O_loss)]
+        testing_T_losses += [float(testing_T_loss)]
     
     
-    accuracies_P += [float(correct_pro)]
-    accuracies_O += [float(correct_org)]
-    accuracies_T += [float(correct_total)]
+        accuracies_P += [float(correct_pro)]
+        accuracies_O += [float(correct_org)]
+        accuracies_T += [float(correct_total)]
 
-run_data={
-    "Epoch":epoch_labels,
-    "Promoter training losses":training_P_losses,
-    "Promoter test losses":testing_P_losses,
-    "Promoter accuracy":accuracies_P,
-    "Organism training losses":training_O_losses,
-    "Organism_test losses":testing_O_losses,
-    "Organism accuracy":accuracies_O,
-    "Total training losses":training_T_losses,
-    "Total test losses":testing_T_losses,
-    "Total accuracy":accuracies_T
-    }
-df = pd.DataFrame(run_data)
+    run_data={
+        "Epoch":epoch_labels,
+        "Promoter training losses":training_P_losses,
+        "Promoter test losses":testing_P_losses,
+        "Promoter accuracy":accuracies_P,
+        "Organism training losses":training_O_losses,
+        "Organism_test losses":testing_O_losses,
+        "Organism accuracy":accuracies_O,
+        "Total training losses":training_T_losses,
+        "Total test losses":testing_T_losses,
+        "Total accuracy":accuracies_T
+        }
+    df = pd.DataFrame(run_data)
 
-df.to_excel("promoter_models.xlsx",index=False)
-
-model_file = "model.pt"
-
-if not save_model:
-    torch.save(model.state_dict(),model_file)
-else:
-    model = torch.load(model_file,weights_only=False)
-    torch.save(model,model_file)    
+    today = str(date.today())
+    df.to_excel(f"promoter_models_{today}.xlsx",index=False)
+    
+    model_file = "model.pt"
+    
+    if not save_model:
+        torch.save(model.state_dict(),model_file)
+    else:
+        model = torch.load(model_file,weights_only=False)
+        torch.save(model,model_file)    
 
 
 

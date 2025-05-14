@@ -4,7 +4,10 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import random
 from urllib.error import HTTPError
+from datetime import date
+import json
 
+today = str(date.today())
 ############## Valgfrie indstillinger ##############
 curated=None
 #curated=" AND srcdb_refseq[PROP]"
@@ -72,6 +75,11 @@ def robust_esearch(term, db="nucleotide", retries=3, delay=3):
     print("‼️ Giver op på søgning:", term)
     return None
 
+def write_dataframe_to_jsonl(df, filename):
+    with open(filename, 'w', encoding='utf-8') as f:
+        for record in df.to_dict(orient='records'):
+            json.dump(record, f, ensure_ascii=False)
+            f.write('\n')
 
 
 output_file=f"promoters_{rige}.csv"
@@ -230,10 +238,10 @@ if not pooled:
                                                      "TOTAL"])
 
 
-    train.to_csv(f"training_{rige}.csv",index=False)
-    test.to_csv(f"test_{rige}.csv",index=False)
-    validation.to_csv(f"validation_{rige}.csv",index=False)
-    overview_data.to_csv(f"overview_{rige}_unpooled.csv",index=True)
+    write_dataframe_to_jsonl(train, f"training_{rige}_{today}.jsonl")
+    write_dataframe_to_jsonl(test, f"test_{rige}_{today}.jsonl")
+    write_dataframe_to_jsonl(validation, f"validation_{rige}_{today}.jsonl")
+    overview_data.to_csv(f"overview_{rige}_unpooled_{today}.csv",index=True)
 else:
     overview={}
     for i in data["organism"].unique():
@@ -252,8 +260,8 @@ else:
         
         
         
-    data.to_csv(f"data_{rige}.csv",index=False)
-    overview_data.to_csv(f"overview_{rige}_pooled.csv",index=True)
+    write_dataframe_to_jsonl(data,f"data_{rige}_{today}.jsonl")
+    overview_data.to_csv(f"overview_{rige}_pooled_{today}.csv",index=True)
 
 
 

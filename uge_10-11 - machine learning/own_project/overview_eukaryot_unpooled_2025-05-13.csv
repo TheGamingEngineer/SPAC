@@ -1,0 +1,10 @@
+,Homo sapiens,Canis lupus familiaris,Mus musculus,Rattus norvegicus
+PROMOTERS,5000,82,1818,524
+training,3514,53,1264,363
+testing,761,13,271,89
+validation,725,16,283,72
+NON-PROMOTERS,5000,82,2000,1000
+training,3486,62,1408,704
+testing,739,11,302,140
+validation,775,9,290,156
+TOTAL,10000,164,3818,1524
