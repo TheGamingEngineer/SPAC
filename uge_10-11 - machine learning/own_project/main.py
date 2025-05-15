@@ -5,17 +5,11 @@ Created on Mon May  5 13:48:00 2025
 @author: spac-30
 """
 
-import os
-from dotenv import load_dotenv, dotenv_values
-import torchvision
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader, Dataset
 from torch.accelerator import current_accelerator, is_available
-from torch.optim import SGD
 import torch.nn as nn
-import torch.nn.functional as F
 import torch 
 import pandas as pd
-import numpy as np
 from datetime import date
 import json
 
@@ -23,12 +17,6 @@ Epochs = 50
 Learning_rate = 1e-3
 Batch_size = 128
 save_model=False
-
-"""
-test_Data=pd.read_csv("test_eukaryot_curated.csv",sep=";") 
-train_Data=pd.read_csv("training_eukaryot_curated.csv",sep=";")    
-val_Data=pd.read_csv("validation_eukaryot_curated.csv",sep=";") 
-"""
 
 def read_large_jsonl(path, max_lines=None):
     data = []
@@ -114,7 +102,6 @@ class Sequence_dataset(Dataset):
         one_hot_seq = seq_one_hot(seq)
         padded = torch.zeros(self.max_len,4)
         padded[:len(one_hot_seq)] = one_hot_seq
-        #promoter_label = torch.tensor(self.promoter_labels.iloc[idx],dtype=torch.long)
         promoter_label = torch.tensor(self.promoter_labels.iloc[idx],dtype=torch.float) ## 13/5-2025 kl 1401
         org_label = torch.tensor(self.organism_labels.iloc[idx],dtype=torch.long)
         
@@ -124,9 +111,9 @@ train_dataset = Sequence_dataset(train_Data, max_len=1000)
 val_dataset = Sequence_dataset(val_Data, max_len=1000)
 test_dataset = Sequence_dataset(test_Data, max_len=1000)
 
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=128, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=Batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=Batch_size, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=Batch_size, shuffle=False)
 
 
 optimizer = torch.optim.Adam(model.parameters(),lr=Learning_rate)
@@ -134,7 +121,7 @@ optimizer = torch.optim.Adam(model.parameters(),lr=Learning_rate)
 promoter_loss_func=nn.BCEWithLogitsLoss()
 organism_loss_func=nn.CrossEntropyLoss()
 
-def training_loop(dataloader, model, optimizer, batch_size=Batch_size, pro_fn=promoter_loss_func, org_fn=organism_loss_func):
+def training_loop(dataloader, model, optimizer, pro_fn=promoter_loss_func, org_fn=organism_loss_func):
     
     model.train()
     promoter_losses=[]
@@ -144,8 +131,7 @@ def training_loop(dataloader, model, optimizer, batch_size=Batch_size, pro_fn=pr
     n=0
     for x, y_promoter, y_org in dataloader:
         x = x.to(device).float()
-        y_promoter = y_promoter.to(device).float().unsqueeze(1)
-        #y_promoter = y_promoter.unsqueeze(1)        
+        y_promoter = y_promoter.to(device).float().unsqueeze(1)       
         
         y_org = y_org.to(device)
         
@@ -166,8 +152,7 @@ def training_loop(dataloader, model, optimizer, batch_size=Batch_size, pro_fn=pr
         if n % 100 == 0: 
             ## udregner promoter-forudsigelses nøjagtigheden
             probs = torch.sigmoid(pred_promoter)
-            #correct_pro = ((probs > 0.5) == y_promoter).sum().item()
-            ### 13/5-2025 kl 14:01
+            
             preds = (probs > 0.5).squeeze().long()
             labels = y_promoter.squeeze().long()
             correct_pro = (preds == labels).sum().item()
@@ -223,17 +208,13 @@ def testing_loop(dataloader, model, pro_fn=promoter_loss_func, org_fn=organism_l
             
             # Beregn korrekthed for promoter
             probs = torch.sigmoid(pro_pred)
-            #correct_pro += ((probs > 0.5) == y_promoter).sum().item()
-            ### 13/5-2025 kl 14:01
             preds = (probs > 0.5).squeeze().long()
             labels = y_promoter.squeeze().long()
             correct_pro += (preds == labels).sum().item()
             
             # Beregn korrekthed for organism
             correct_org += (org_pred.argmax(1) == y_org).sum().item()
-            #print("#######################################################")
-            #print("Mean promoter prediction probability:", probs.mean().item())
-            #print("#######################################################")
+            
     promoter_loss /= num_batches
     org_loss /= num_batches
     total_loss /= num_batches
@@ -298,7 +279,7 @@ if __name__ == "__main__":
     today = str(date.today())
     df.to_excel(f"promoter_models_{today}.xlsx",index=False)
     
-    model_file = "model.pt"
+    model_file = "promoter_learner.pt"
     
     if not save_model:
         torch.save(model.state_dict(),model_file)

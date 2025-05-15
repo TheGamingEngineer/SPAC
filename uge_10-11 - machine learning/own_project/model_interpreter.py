@@ -6,20 +6,12 @@ Created on Wed May 14 09:23:37 2025
 """
 
 import torch
-import torchvision
-from PIL import Image
-import numpy as np
 import matplotlib.pyplot as plt
-import struct
 import os
 import seaborn
 import pandas as pd
-import numpy as np
-from datetime import date
-import json
 from main import RNN, Sequence_dataset, seq_one_hot, read_large_jsonl
-import matplotlib.pyplot as plt
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader
 from torch.accelerator import current_accelerator, is_available
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -31,7 +23,7 @@ hidden_size = 64
 
 
 model = RNN(input_size, hidden_size)
-model.load_state_dict(torch.load("model.pt",map_location=device))
+model.load_state_dict(torch.load("promoter_learner.pt",map_location=device))
 model = model.to(device)
 model.eval()
 
@@ -106,7 +98,7 @@ plt.ylabel("Rigtig label")
 
 # Valgfrit: titel
 plt.title("Organisme Forudsigelse: Aktuel vs. Model")
-
+plt.savefig("Organisme Forudsigelse.png")
 plt.show()
 
 plt.figure(figsize=(8,6))
@@ -118,5 +110,5 @@ plt.ylabel("Rigtig label")
 
 # Valgfrit: titel
 plt.title("Promoter Forudsigelse: Aktuel vs. Model")
-
+plt.savefig("Promoter Forudsigelse.png")
 plt.show()

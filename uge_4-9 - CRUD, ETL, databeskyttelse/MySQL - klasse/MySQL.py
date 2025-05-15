@@ -1020,11 +1020,17 @@ class MySQL:
             try:
                 if action.upper() not in ["CREATE","DELETE","GRANT","SHOW","GRANTED"]:
                     raise ValueError("Parameter 'action' can only be create, delete, grant, granted, or show.")
-                    
+                if action.upper() in ["CREATE", "DELETE"] and not name:
+                    raise ValueError("You must provide a role name for CREATE or DELETE.")
+                if action.upper() == "GRANT" and (not name or not user):
+                    raise ValueError("You must provide both role name and user for GRANT.")
+                if not re.match(r"^[a-zA-Z0-9_]+$", name):
+                    raise ValueError("Role name contains illegal characters.")
+    
                 interface=self.connection.cursor()
                 
                 ## kan enten skabe eller slette roller
-                if action.upper()!="SHOW":
+                if action.upper() not in ["SHOW","GRANTED"]:
                     if action.upper()=="CREATE":
                         command=f"CREATE ROLE {name}"
                     elif action.upper()=="DELETE":
@@ -1033,21 +1039,21 @@ class MySQL:
                         command=f"GRANT {name} TO {user}"
                     interface.execute(command)
                 else:
-                    if action.upper()=="GRANT":
+                    if action.upper()=="GRANTED":
                         command="SELECT DISTINCT TO_USER AS role_name, TO_HOST FROM mysql.role_edges"
                     else:
                         command="SELECT FROM_USER AS user, FROM_HOST AS user_host, TO_USER AS role, TO_HOST AS role_host FROM mysql.role_edges ORDER BY user"
+                    interface.execute()
                     results = interface.fetchall()
                     colnames = [desc[0] for desc in interface.description]
                     print(tabulate(results, headers=colnames, tablefmt="fancy_grid"))
-                    self.connection.commit()
                 interface.close()
             except Exception as e:
                 print(f"ROLE ERROR: {e}")
         else:
             print("No Connection Established. Start A Session First.")
     
-    ## funktion til at håndtere roller
+    ## funktion til at håndtere brugere
     def user(self,name,action,password="",role="",access_from="'%'"):
         if self.connection:
             try:
@@ -1077,7 +1083,7 @@ class MySQL:
             print("No Connection Established. Start A Session First.")
     
     ## funktion til at håndtere privilegier
-    def privileges(self, name, action, db, privileges=[], table="*"):
+    def privileges(self, name, action, db="", privileges=[], table="*"):
         if self.connection:
             try:
                 if type(privileges)==str:
