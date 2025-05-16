@@ -77,6 +77,9 @@ https://docs.pytorch.org/docs/stable/generated/torch.nn.RNN.html
 https://www.datacamp.com/tutorial/pytorch-cnn-tutorial
 https://docs.pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
 https://www.geeksforgeeks.org/numpy-sum-in-python/
+https://docs.pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss.html
+https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html
+https://docs.pytorch.org/docs/stable/generated/torch.nn.GRU.html
 
 
 
