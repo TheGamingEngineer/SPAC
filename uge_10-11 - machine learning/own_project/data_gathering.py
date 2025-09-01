@@ -28,17 +28,91 @@ if rige=="prokaryot":
     organismer = ["Escherichia coli",
                   "bacillus subtilis",
                   "Helicobacter pylori",
-                  "pseudomonas aeruginosa"]
+                  "pseudomonas aeruginosa",
+                  "Candidatus Saccharimonadales",
+                  "Microcystis aeruginosa",
+                  "Prochlorococcus marinus",
+                  "Staphylococcus aureus",
+                  "Staphylococcus epidermidis",
+                  "Staphylococcus pseudintermedius",
+                  "Bacillus cereus",
+                  "Bacillus thuringiensis",
+                  "Bacillus velezensis",
+                  "Listeria monocytogenes",
+                  "Listeria innocua",
+                  "Streptococcus suis",
+                  "Streptococcus agalactiae",
+                  "Streptococcus pneumoniae",
+                  "Streptococcus pyogenes",
+                  "Streptococcus equi",
+                  "Lactococcus lactis",
+                  "Lactococcus cremoris",
+                  "Lactococcus petauri",
+                  "Lactobacillus delbrueckii",
+                  "Lactobacillus johnsonii",
+                  "Lactobacillus crispatus",
+                  "Lactobacillus iners",
+                  "Oenococcus oeni",
+                  "Limosilactobacillus reuteri",
+                  "Lacticaseibacillus paracasei",
+                  "Lactiplantibacillus plantarum",
+                  "Apilactobacillus kunkeei",
+                  "Ligilactobacillus murinus",
+                  "Ligilactobacillus salivarius",
+                  "Enterococcus faecalis",
+                  "Enterococcus faecium",
+                  "Enterococcus hirae",
+                  "Enterococcus lactis",
+                  "Clostridium botulinum",
+                  "Clostridium perfringens",
+                  "Faecalibacterium prausnitzii",
+                  "Flavonifractor plautii",
+                  "Faecalibaculum rodentium",
+                  "Thomasclavelia cocleata",
+                  "Turicibacter sanguinis",
+                  "Bifidobacterium adolescentis",
+                  "Bifidobacterium bifidum",
+                  "Bifidobacterium breve",
+                  "Bifidobacterium pseudolongum",
+                  "Bifidobacterium animalis",
+                  "Bifidobacterium pseudocatenulatum",
+                  "Bifidobacterium longum",
+                  "Micrococcus luteus",
+                  "Corynebacterium diphtheriae",
+                  "Corynebacterium striatum",
+                  "Mycobacterium tuberculosis",
+                  "Mycobacterium ulcerans",
+                  "Mycobacteroides abscessus",
+                  "Cutibacterium acnes",
+                  "Cutibacterium acnes",
+                  "Collinsella aerofaciens",
+                  "Eggerthella lenta",
+                  "Adlercreutzia equolifaciens",
+                  "Candidatus Phytoplasma",
+                  "Mycoplasmopsis",
+                  "Agrobacterium tumefaciens",
+                  "Agrobacterium arsenijevicii",
+                  "Agrobacterium fabrum"]
     
 elif rige=="eukaryot":
     organismer=["Homo sapiens",
                 "Canis lupus familiaris",
                 "Mus musculus",
-                "Rattus norvegicus"]
+                "Rattus norvegicus",
+                "Aspergillus flavus",
+                "Aspergillus niger",
+                "Aspergillus oryzae",
+                "Aspergillus fumigatus",
+                "Saccharomyces cerevisiae",
+                "Bos taurus",
+                "Chiroptera",
+                "Macrophomina phaseolina",
+                "Fusarium oxysporum",
+                "Beauveria bassiana",
+                "Pyricularia oryzae",
+                "Psilocybe subaeruginosa",
+                "Rhizopus arrhizus"]
 
-elif rige=="fungi":
-    organismer=["penicillium",
-                "aspergillus"]
 
 elif rige=="archaea":
     organismer=[]
@@ -103,7 +177,7 @@ for organisme in organismer:
     
     time.sleep(1.0  + random.uniform(0, 1.0))
     print(f"samler promotere for {organisme}")
-    søgeord=f"promoter[Title] AND {organisme}[Organism]"
+    søgeord=f'promoter[Title] NOT partial[Title] NOT CDS[Title] NOT "coding sequence"[Title] AND {organisme}[Organism] AND 100:1000[Sequence Length]'
     if curated:
         søgeord+=curated
     resultater = robust_esearch(søgeord)

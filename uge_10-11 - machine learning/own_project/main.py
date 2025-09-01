@@ -14,7 +14,7 @@ from datetime import date
 import json
 
 Epochs = 50
-Learning_rate = 1e-3
+Learning_rate = 1e-6
 Batch_size = 128
 save_model=False
 

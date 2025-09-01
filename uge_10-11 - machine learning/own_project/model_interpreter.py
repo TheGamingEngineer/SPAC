@@ -29,8 +29,9 @@ model.eval()
 
 
 ## indlæser valideringsdatasæt
-val_Data = read_large_jsonl("validation_eukaryot_2025-05-13.jsonl")
-val_set = Sequence_dataset(val_Data, max_len=1000)
+val_Data = read_large_jsonl("validation_eukaryot_2025-07-15.jsonl")
+#val_set = Sequence_dataset(val_Data, max_len=1000)
+val_set = Sequence_dataset(val_Data)
 val_loader = DataLoader(val_set, batch_size=128, shuffle=False)
 
 
